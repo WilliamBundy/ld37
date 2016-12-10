@@ -6,17 +6,20 @@ layout (location = 0) in vec2 v_translate;
 //Amount to scale sprite by
 layout (location = 1) in vec2 v_size;
 
+//Amount to translate sprite by locally
+layout (location = 2) in vec2 v_center;
+
 //x, y, w, h of texture rectangle in 0->1 form
-layout (location = 2) in vec4 v_texcoords;
+layout (location = 3) in vec4 v_texcoords;
 
 //rgba color, sent to frag shader
-layout (location = 3) in vec4 v_color;
+layout (location = 4) in vec4 v_color;
 
 //Angle to render at
-layout (location = 4) in float v_angle;
+layout (location = 5) in float v_angle;
 
 //flags first 4 bits: anchor, 1<<4+ flags
-layout (location = 5) in uint v_flags;
+layout (location = 6) in uint v_flags;
 
 out vec2 f_texcoords;
 out vec4 f_color;
@@ -93,6 +96,7 @@ void main()
 	);
 	coords *= rotmat;
 	coords += v_translate;
+	coords -= v_center;
 	gl_Position = vec4(coords, 0, 1) * u_ortho_matrix;
 
 	f_color = v_color;

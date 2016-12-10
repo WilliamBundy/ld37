@@ -13,10 +13,13 @@
 #define DR_WAV_IMPLEMENTATION
 #include "thirdparty/dr_wav.h"
 
-//#define STB_VORBIS_HEADER_ONLY
+#define STB_VORBIS_HEADER_ONLY
 #include "thirdparty/stb_vorbis.c"
 
 #define STS_MIXER_IMPLEMENTATION
 #include "thirdparty/sts_mixer.h"
+
+#define DR_FLAC_IMPLEMENTATION
+#include "thirdparty/dr_flac.h"
 
 

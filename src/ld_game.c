@@ -17,8 +17,9 @@ typedef struct GameSettings_
 
 	string vert_shader;
 	string frag_shader;
+	string texture_file;
 
-	SDL_Window* window;
+	string archive_name;
 
 } GameSettings;
 
@@ -33,20 +34,41 @@ typedef struct GameHandle_
 	MemoryArena* render_arena;
 
 	SpriteRenderer* renderer;
+	SpriteGroup* current_group;
 	Vec2 display_size;
 	f32 scale;
 	
 	string base_path;
 	string pref_path;
+
+	mz_zip_archive assets;
 	
 } GameHandle;
+
+
+
+void* game_get_asset(GameHandle* game, string asset_name, isize* size_out)
+{
+	usize len = 0;
+	void* asset = mz_zip_reader_extract_file_to_heap(&game->assets, asset_name, &len, 0);
+	*size_out = len;
+	return asset;
+}
 
 void game_update_screen(GameHandle* game)
 {
 	SDL_GetWindowSize(game->window, &game->window_size.x, &game->window_size.y);
 	glViewport(0, 0, game->window_size.x, game->window_size.y);
-	game->display_size = v2(game->window_size.x * game->scale, game->window_size.y * game->scale);
+	game->display_size = v2(game->window_size.x / game->scale, game->window_size.y / game->scale);
 }
+
+void game_set_scale(GameHandle* game, f32 scale)
+{
+	game->scale = scale;
+	game->display_size.x = game->window_size.x / scale;
+	game->display_size.y = game->window_size.y / scale;
+}
+
 
 GameHandle* game_init(GameSettings* settings)
 {
@@ -80,7 +102,6 @@ GameHandle* game_init(GameSettings* settings)
 		log_error("Error: could not create window: %s", SDL_GetError());
 		return NULL;
 	}
-	settings->window = window;
 
 	SDL_GLContext opengl_context = SDL_GL_CreateContext(window);
 	if(!gladLoadGL()) {
@@ -115,12 +136,50 @@ GameHandle* game_init(GameSettings* settings)
 
 	game->game_arena = game_arena;
 	game->render_arena = arena_bootstrap("RenderArena", Megabytes(256));
-	
+
+	char* vertex_src;
+	char* frag_src;
+
+	{
+		mz_zip_archive zip = {0};
+		char fn_buf[4096];
+		snprintf(fn_buf, 4096, "%s%s", game->base_path, settings->archive_name);
+
+		i32 result = mz_zip_reader_init_file(&zip, fn_buf, MZ_ZIP_FLAG_COMPRESSED_DATA);
+
+		if(!result) {
+			log_error("Could not open archive %s. Please locate game archive and try again", settings->archive_name);
+			return NULL;
+		}
+
+		usize len = 0;
+
+		vertex_src = mz_zip_reader_extract_file_to_heap(&zip, settings->vert_shader, &len, 0);
+		vertex_src[len-1] = '\0';
+
+		len = 0;
+		frag_src = mz_zip_reader_extract_file_to_heap(&zip, settings->frag_shader, &len, 0);
+		frag_src[len - 1] = '\0';
+		game->assets = zip;
+	}
+
 	game->renderer = arena_push(game->game_arena, sizeof(SpriteRenderer));
 	sprite_renderer_init_groups(game->renderer, 8, 
 			200000, 
 			game->render_arena);
-	sprite_renderer_init_gl(game->renderer, settings->vert_shader, settings->frag_shader);
+	
+	sprite_renderer_init_gl(game->renderer, vertex_src, frag_src);
+	
+	{
+		u32 texture;
+		i32 w, h;
+		isize newlen;
+		u8* raw_image = mz_zip_reader_extract_file_to_heap(&game->assets, settings->texture_file, &newlen, 0);
+		texture = ogl_load_texture_from_memory(raw_image, newlen,  &w, &h);
+		sprite_renderer_set_texture(game->renderer, texture, w, h);
+	}
+
+	game->current_group = game->renderer->groups;
 	
 	return game;
 }

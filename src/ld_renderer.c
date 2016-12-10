@@ -45,6 +45,7 @@ typedef struct Sprite_
 {
 	Vec2 pos;
 	Vec2 size;
+	Vec2 center;
 	Rect2 texture;
 	Color color;
 	f32 angle;
@@ -56,6 +57,7 @@ void sprite_init(Sprite* s)
 {
 	s->pos = v2(0, 0);
 	s->size = v2(16, 16);
+	s->center = v2(0, 0);
 	s->texture = rect2(0, 0, 1, 1);
 	s->color = create_color(1, 1, 1, 1);
 	s->angle = 0;
@@ -139,6 +141,11 @@ void sprite_renderer_init_gl(SpriteRenderer* render, string vert_source, string 
 	array_index++;
 
 	glVertexAttribPointer(array_index, 2, GL_FLOAT, GL_FALSE, stride, &((Sprite*)NULL)->size);
+	glEnableVertexAttribArray(array_index);
+	glVertexAttribDivisor(array_index, vertex_count);
+	array_index++;
+
+	glVertexAttribPointer(array_index, 2, GL_FLOAT, GL_FALSE, stride, &((Sprite*)NULL)->center);
 	glEnableVertexAttribArray(array_index);
 	glVertexAttribDivisor(array_index, vertex_count);
 	array_index++;
@@ -236,6 +243,8 @@ void render_add(SpriteGroup* group, const Sprite* sprite)
 
 void render_calculate_ortho_matrix(f32* ortho, Vec4 screen, float nearplane, float farplane)
 {
+	//v4 == x, y, z, w;
+	//   == l, t, r, b
 	ortho[0] = 2.0f / (screen.z - screen.x);
 	ortho[1] = 0;
 	ortho[2] = 0;

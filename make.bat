@@ -77,7 +77,6 @@ cl ^
 	/Zi ^
 	/W3 ^
 	/Gd ^
-	/GS- ^
 	/fp:fast ^
 	/EHsc ^
 	/MTd ^
@@ -135,6 +134,7 @@ del %ASSET_ARCHIVE%
 %zip% a %ASSET_ARCHIVE% assets\*.png 1>NUL
 %zip% a %ASSET_ARCHIVE% assets\*.wav 1>NUL
 %zip% a %ASSET_ARCHIVE% assets\*.ogg 1>NUL
+%zip% a %ASSET_ARCHIVE% assets\*.flac 1>NUL
 
 
 
