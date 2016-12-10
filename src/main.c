@@ -149,7 +149,7 @@ int main(int argc, char** argv)
 	want.samples = 4096;
 	want.callback = audio_callback;
 	audio_device = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
-	log_error("Was there a SDL_Error? %d", have.format == want.format);
+	log_error("Was there a SDL_Error? %s", SDL_GetError());
 
 	sts_mixer_init(&mixer, 44100, STS_MIXER_SAMPLE_FORMAT_FLOAT);
 
@@ -166,6 +166,7 @@ int main(int argc, char** argv)
 	refill_stream(&stream.stream.sample, &stream);
 	sts_mixer_play_stream(&mixer, &stream.stream, 0.6f);
 	SDL_PauseAudioDevice(audio_device, 0);
+	log_error("Was there a SDL_Error? %s", SDL_GetError());
 
 	//renderer texture setup
 	u32 texture;
