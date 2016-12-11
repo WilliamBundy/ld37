@@ -32,6 +32,7 @@ typedef struct GameHandle_
 
 	MemoryArena* game_arena;
 	MemoryArena* render_arena;
+	MemoryArena* play_arena;
 
 	SpriteRenderer* renderer;
 	SpriteGroup* current_group;
@@ -42,6 +43,8 @@ typedef struct GameHandle_
 	string pref_path;
 
 	mz_zip_archive assets;
+
+	i32* keys;
 	
 } GameHandle;
 
@@ -136,6 +139,9 @@ GameHandle* game_init(GameSettings* settings)
 
 	game->game_arena = game_arena;
 	game->render_arena = arena_bootstrap("RenderArena", Megabytes(256));
+	game->play_arena = arena_bootstrap("PlayArena", Megabytes(256));
+
+	game->keys = arena_push(game->game_arena, sizeof(i32) * SDL_NUM_SCANCODES);
 
 	char* vertex_src;
 	char* frag_src;
@@ -184,16 +190,48 @@ GameHandle* game_init(GameSettings* settings)
 	return game;
 }
 
+typedef enum ButtonState_
+{
+	Button_JustReleased = -1,
+	Button_Released,
+	Button_Pressed,
+	Button_JustPressed
+} ButtonState;
+
+
 i32 game_start(GameHandle* game, void (*update)(GameHandle*))
 {
 	i32 running = 1;
 	SDL_Event event;
 	glClearColor(0, 0, 0, 1);
 	while(running) {
+		for(isize i = 0; i < SDL_NUM_SCANCODES; ++i) {
+			i32* t = game->keys + i;
+			if(*t == Button_JustPressed) {
+				*t = Button_Pressed;
+				printf("->%d\n", i);
+			} else if(*t == Button_JustReleased) {
+				*t = Button_Released;
+				printf("<-%d\n", i);
+			}
+		}
+
 		while(SDL_PollEvent(&event)) {
 			switch(event.type) {
 				case SDL_QUIT:
 					running = false;
+					break;
+				case SDL_KEYDOWN:
+					if(!event.key.repeat) {
+						printf("Keydown!\n");
+						game->keys[event.key.keysym.scancode] = Button_JustPressed;
+					}
+					break;
+				case SDL_KEYUP:
+					if(!event.key.repeat) {
+						printf("Keyup!\n");
+						game->keys[event.key.keysym.scancode] = Button_JustReleased;
+					}
 					break;
 			}
 		}

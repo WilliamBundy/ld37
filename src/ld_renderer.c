@@ -363,3 +363,63 @@ GLuint ogl_load_texture_from_memory(u8* buf, i32 size, i32* x, i32* y)
 	return texture;
 } 
 
+Sprite create_box_primitive(Vec2 pos, Vec2 size, Color color)
+{
+	Sprite s;
+	sprite_init(&s);
+	s.pos = pos;
+	s.texture = rect2(0, 0, 16, 16);
+	s.size = size;
+	s.color = color;
+	return s;
+}
+
+void render_box(SpriteGroup* group, Vec2 pos, Vec2 size, Color color)
+{
+	Sprite s = create_box_primitive(pos, size, color);
+	render_add(group, &s);
+}
+
+Sprite create_line_primitive(Vec2 start, Vec2 end, Color color, i32 thickness)
+{
+	Vec2 dline;
+	dline.x = end.x - start.x;
+	dline.y = end.y - start.y;
+	Sprite s;
+	if(dline.y == 0) {
+		if(dline.x < 0) {
+			dline.x *= -1;
+			Vec2 temp = end;
+			end = start;
+			start = temp;
+		}
+		Vec2 lstart = start;
+		lstart.x += dline.x / 2.0f;
+		s = create_box_primitive(lstart, v2(dline.x, thickness), color);
+	} else if(dline.x == 0) {
+		if(dline.y < 0) {
+			dline.y *= -1;
+			Vec2 temp = end;
+			end = start;
+			start = temp;
+		}
+		Vec2 lstart = start;
+		lstart.y += dline.y / 2;
+		s = create_box_primitive(lstart, v2(thickness, dline.y), color);
+	} else {
+		Vec2 lstart = start;
+		f32 mag = v2_mag(&dline);
+		start.x += dline.x / 2.0f + mag;
+		start.y += dline.y / 2.0f + mag;
+
+		s = create_box_primitive(lstart, v2(mag, thickness), color);
+		f32 angle = atan2f(dline.y, dline.x);
+		s.angle = -angle;
+	}
+	return s;
+}
+void render_line(SpriteGroup* group, Vec2 start, Vec2 end, Color color, i32 thickness)
+{
+	Sprite s = create_line_primitive(start, end, color, thickness);
+	render_add(group, &s);
+}
